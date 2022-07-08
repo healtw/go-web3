@@ -7,12 +7,15 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/chenzhijie/go-web3/rpc"
-	"github.com/chenzhijie/go-web3/types"
-	"github.com/chenzhijie/go-web3/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/healtw/go-web3/rpc"
+	"github.com/healtw/go-web3/types"
+	"github.com/healtw/go-web3/utils"
+
+	"eaglesdk/sdk/adapter"
 
 	eTypes "github.com/ethereum/go-ethereum/core/types"
 )
@@ -68,6 +71,10 @@ func (e *Eth) GetChainId() *big.Int {
 // Setup current network chainId
 func (e *Eth) SetChainId(chainId int64) {
 	e.chainId = big.NewInt(chainId)
+}
+
+func (e *Eth) SetAddress(address common.Address) {
+	e.address = address
 }
 
 // Setup timeout for polling confirmation from txs (unit second)
@@ -364,4 +371,37 @@ func toBlockNumArg(number *big.Int) string {
 		return "pending"
 	}
 	return hexutil.EncodeBig(number)
+}
+func (e *Eth) SyncSendRawTransactionWithoutReceipt(
+	to common.Address,
+	amount *big.Int,
+	gasLimit uint64,
+	gasPrice *big.Int,
+	data []byte,
+) (common.Hash, error) {
+	var hash common.Hash
+
+	adapter.Log("SyncSendRawTransaction From: " + (e.address).String())
+	nonce, err := e.GetNonce(e.address, nil)
+	if err != nil {
+		return hash, err
+	}
+
+	tx := eTypes.NewTransaction(nonce, to, amount, gasLimit, gasPrice, data)
+	signedTx, err := eTypes.SignTx(tx, eTypes.NewEIP155Signer(e.chainId), e.privateKey)
+	if err != nil {
+		return hash, err
+	}
+	serializedTx, err := rlp.EncodeToBytes(signedTx)
+	if err != nil {
+		return hash, err
+	}
+	// fmt.Println("serializedTx: " + fmt.Sprintf("0x%x", serializedTx))
+	err = e.c.Call("eth_sendRawTransaction", &hash, fmt.Sprintf("0x%x", serializedTx))
+	if err != nil {
+		return hash, err
+	}
+
+	return hash, nil
+
 }

@@ -3,8 +3,8 @@ package crypto
 import (
 	"bytes"
 
-	"github.com/chenzhijie/go-web3/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/healtw/go-web3/utils"
 )
 
 func VerifyProof(proofs []common.Hash, root []byte, data []byte) (bool, error) {

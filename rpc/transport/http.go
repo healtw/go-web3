@@ -2,14 +2,20 @@ package transport
 
 import (
 	"bufio"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
 	"time"
 
-	"github.com/chenzhijie/go-web3/rpc/codec"
+	"eaglesdk/sdk/adapter"
+	"eaglesdk/sdk/cert"
+
+	"github.com/healtw/go-web3/rpc/codec"
 	"github.com/valyala/fasthttp"
 )
 
@@ -18,32 +24,101 @@ var (
 )
 
 type HTTP struct {
-	addr   string
-	proxy  string
-	client *fasthttp.Client
+	addr       string
+	proxy      string
+	hostclient *fasthttp.HostClient
 }
 
 func NewHTTP(addr, proxy string) *HTTP {
 	return newHTTP(addr, proxy)
 }
+func tlsClientConfig() *tls.Config {
+	pool := x509.NewCertPool()
+	pool.AppendCertsFromPEM([]byte(cert.CertPaxSys01))
+	pool.AppendCertsFromPEM([]byte(cert.CertPaxR01))
+	pool.AppendCertsFromPEM([]byte(cert.CertX3))
 
-func newHTTP(addr, proxy string) *HTTP {
-	if len(proxy) == 0 {
-		return &HTTP{
-			addr: addr,
-			client: &fasthttp.Client{
-				Dial: func(addr string) (net.Conn, error) {
-					return fasthttp.DialTimeout(addr, dialTimeout)
-				},
-			},
+	cfg := &tls.Config{
+		InsecureSkipVerify: true,
+		VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+			if 0 == len(rawCerts) {
+				return errors.New("RawCerts empty.")
+			} else if 1 == len(rawCerts) {
+				certificate, err := x509.ParseCertificate(rawCerts[0])
+				if err != nil {
+					return errors.New("RawCert data format error.")
+				}
+
+				verifyOptions := x509.VerifyOptions{
+					Roots: pool,
+				}
+				_, err = certificate.Verify(verifyOptions)
+				return err
+			} else {
+				return checkCerts(rawCerts, pool)
+			}
+		},
+		VerifyConnection: func(state tls.ConnectionState) error {
+			if strings.HasSuffix(state.PeerCertificates[0].DNSNames[0], "paxengine.com.cn") {
+				return nil
+			}
+			return errors.New("Host name is invalid.")
+		},
+	}
+	return cfg
+}
+func checkCerts(rawCerts [][]byte, pool *x509.CertPool) error {
+	length := len(rawCerts)
+
+	for i := length - 1; i >= 0; i-- {
+		certificate, err := x509.ParseCertificate(rawCerts[i])
+		if err != nil {
+			return errors.New("RawCert data format error.")
+		}
+
+		if i == length-1 {
+			verifyOptions := x509.VerifyOptions{
+				Roots: pool,
+			}
+			_, err = certificate.Verify(verifyOptions)
+			if nil != err {
+				return err
+			}
+		} else {
+			certificateParent, err := x509.ParseCertificate(rawCerts[i+1])
+			if err != nil {
+				return errors.New("RawCert data format error.")
+			}
+
+			poolTmp := x509.NewCertPool()
+			poolTmp.AddCert(certificateParent)
+			verifyOptions := x509.VerifyOptions{
+				Roots: poolTmp,
+			}
+			_, err = certificate.Verify(verifyOptions)
+			if nil != err {
+				return err
+			}
 		}
 	}
 
+	return nil
+}
+
+func newHTTP(addr, proxy string) *HTTP {
+	tlsConfig := tlsClientConfig()
+
+	// adapter.Log("addr: [" + addr + "]")
+
 	return &HTTP{
-		addr:  addr,
-		proxy: proxy,
-		client: &fasthttp.Client{
-			Dial: httpProxyDialer(proxy, dialTimeout),
+		addr: addr,
+		hostclient: &fasthttp.HostClient{
+			Addr: tools.GetUrlAndPort(addr),
+			Dial: func(addr string) (net.Conn, error) {
+				return fasthttp.DialTimeout(addr, dialTimeout)
+			},
+			IsTLS:     true,
+			TLSConfig: tlsConfig,
 		},
 	}
 }
@@ -75,12 +150,15 @@ func (h *HTTP) Call(method string, out interface{}, params ...interface{}) error
 	defer fasthttp.ReleaseRequest(req)
 	defer fasthttp.ReleaseResponse(res)
 
+	adapter.Log("h.addr:[" + h.addr + "]")
+	adapter.Log("h.hostclient.Addr:[" + h.hostclient.Addr + "]")
+	adapter.Log("h.hostclient.Name:[" + h.hostclient.Name + "]")
 	req.SetRequestURI(h.addr)
 	req.Header.SetMethod("POST")
 	req.Header.SetContentType("application/json")
 	req.SetBody(raw)
 
-	if err := h.client.Do(req, res); err != nil {
+	if err := h.hostclient.Do(req, res); err != nil {
 		return err
 	}
 
@@ -92,6 +170,8 @@ func (h *HTTP) Call(method string, out interface{}, params ...interface{}) error
 		return response.Error
 	}
 
+	// bt, _ := response.Result.MarshalJSON()
+	// fmt.Println("bt: " + hex.EncodeToString(bt))
 	if err := json.Unmarshal(response.Result, out); err != nil {
 		return err
 	}
@@ -99,7 +179,7 @@ func (h *HTTP) Call(method string, out interface{}, params ...interface{}) error
 }
 
 func (h *HTTP) Do(req *fasthttp.Request, res *fasthttp.Response) ([]byte, error) {
-	if err := h.client.Do(req, res); err != nil {
+	if err := h.hostclient.Do(req, res); err != nil {
 		return nil, err
 	}
 

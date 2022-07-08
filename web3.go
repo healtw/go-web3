@@ -1,11 +1,9 @@
 package web3
 
 import (
-	"strings"
-
-	"github.com/chenzhijie/go-web3/eth"
-	"github.com/chenzhijie/go-web3/rpc"
-	"github.com/chenzhijie/go-web3/utils"
+	"github.com/healtw/go-web3/eth"
+	"github.com/healtw/go-web3/rpc"
+	"github.com/healtw/go-web3/utils"
 )
 
 type Web3 struct {
@@ -24,21 +22,22 @@ func NewWeb3WithProxy(provider, proxy string) (*Web3, error) {
 		return nil, err
 	}
 	e := eth.NewEth(c)
+	chainId, err := e.ChainID()
 
-	providerLowerStr := strings.ToLower(provider)
+	// providerLowerStr := strings.ToLower(provider)
 
-	if strings.Contains(providerLowerStr, "ropsten") {
-		e.SetChainId(3)
-	} else if strings.Contains(providerLowerStr, "kovan") {
-		e.SetChainId(42)
-	} else if strings.Contains(providerLowerStr, "rinkeby") {
-		e.SetChainId(4)
-	} else if strings.Contains(providerLowerStr, "goerli") {
-		e.SetChainId(5)
-	} else {
-		e.SetChainId(1)
-	}
-
+	// if strings.Contains(providerLowerStr, "ropsten") {
+	// 	e.SetChainId(3)
+	// } else if strings.Contains(providerLowerStr, "kovan") {
+	// 	e.SetChainId(42)
+	// } else if strings.Contains(providerLowerStr, "rinkeby") {
+	// 	e.SetChainId(4)
+	// } else if strings.Contains(providerLowerStr, "goerli") {
+	// 	e.SetChainId(5)
+	// } else {
+	// 	e.SetChainId(1)
+	// }
+	e.SetChainId(chainId.Int64())
 	u := utils.NewUtils()
 	w := &Web3{
 		Eth:   e,
@@ -47,7 +46,7 @@ func NewWeb3WithProxy(provider, proxy string) (*Web3, error) {
 	}
 
 	// Default poll timeout 2 hours
-	w.Eth.SetTxPollTimeout(7200)
+	w.Eth.SetTxPollTimeout(0)
 	return w, nil
 }
 
