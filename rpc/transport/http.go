@@ -105,6 +105,34 @@ func checkCerts(rawCerts [][]byte, pool *x509.CertPool) error {
 	return nil
 }
 
+//no need http/https:
+func getUrlAndPort(value string) string {
+	var port string
+	value1 := strings.ToLower(value)
+
+	if strings.HasPrefix(value1, "http://") {
+		value1 = strings.TrimLeft(value1, "http://")
+		port = ":80"
+	} else if strings.HasPrefix(value1, "https://") {
+		value1 = strings.TrimLeft(value1, "https://")
+		port = ":443"
+	}
+
+	if strings.Count(value1, ":") == 1 {
+		return value1
+	} else {
+		Index := strings.Index(value1, "/")
+		if Index == -1 {
+			return value1 + port
+		} else {
+			head := value1[0:Index]
+			tail := value1[Index:]
+			// fmt.Println("\nhead:" + head + "\ntail:" + tail)
+			return head + port + tail
+		}
+	}
+}
+
 func newHTTP(addr, proxy string) *HTTP {
 	tlsConfig := tlsClientConfig()
 
@@ -113,7 +141,7 @@ func newHTTP(addr, proxy string) *HTTP {
 	return &HTTP{
 		addr: addr,
 		hostclient: &fasthttp.HostClient{
-			Addr: tools.GetUrlAndPort(addr),
+			Addr: getUrlAndPort(addr),
 			Dial: func(addr string) (net.Conn, error) {
 				return fasthttp.DialTimeout(addr, dialTimeout)
 			},
