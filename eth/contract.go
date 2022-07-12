@@ -69,7 +69,6 @@ func (c *Contract) Call(methodName string, args ...interface{}) (interface{}, er
 	return response[0], nil
 }
 
-
 func (c *Contract) CallWithMultiReturns(methodName string, args ...interface{}) ([]interface{}, error) {
 
 	data, err := c.EncodeABI(methodName, args...)
