@@ -188,3 +188,34 @@ func (e *Eth) NewContract(abiString string, contractAddr ...string) (*Contract, 
 
 	return c, nil
 }
+
+
+func (c *Contract) CallWithMultiReturns_ZeroValueCallMsg(methodName string, args ...interface{}) ([]interface{}, error) {
+
+	data, err := c.EncodeABI(methodName, args...)
+
+	if err != nil {
+		return nil, err
+	}
+	msg := &types.ZeroValueCallMsg{
+		To:   c.addr,
+		Data: data,
+	}
+
+	var out string
+	if err := c.provider.Call("eth_call", &out, msg, "latest"); err != nil {
+		return nil, err
+	}
+
+	outputBytes, err := hexutil.Decode(out)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := c.abi.Unpack(methodName, outputBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
