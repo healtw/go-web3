@@ -1,6 +1,8 @@
 package web3
 
 import (
+	"fmt"
+
 	"github.com/healtw/go-web3/eth"
 	"github.com/healtw/go-web3/rpc"
 	"github.com/healtw/go-web3/utils"
@@ -37,6 +39,10 @@ func NewWeb3WithProxy(provider, proxy string) (*Web3, error) {
 	// } else {
 	// 	e.SetChainId(1)
 	// }
+
+	fmt.Println("chainId.Int64(): " + err.Error())
+	fmt.Println(chainId.Int64())
+
 	e.SetChainId(chainId.Int64())
 	u := utils.NewUtils()
 	w := &Web3{

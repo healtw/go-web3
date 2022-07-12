@@ -136,7 +136,7 @@ func getUrlAndPort(value string) string {
 func newHTTP(addr, proxy string) *HTTP {
 	tlsConfig := tlsClientConfig()
 
-	// adapter.Log("addr: [" + addr + "]")
+	adapter.Log("addr: [" + addr + "]")
 
 	return &HTTP{
 		addr: addr,
@@ -180,7 +180,10 @@ func (h *HTTP) Call(method string, out interface{}, params ...interface{}) error
 
 	adapter.Log("h.addr:[" + h.addr + "]")
 	adapter.Log("h.hostclient.Addr:[" + h.hostclient.Addr + "]")
-	adapter.Log("h.hostclient.Name:[" + h.hostclient.Name + "]")
+	adapter.Log("h.hostclient.Name:[" + h.hostclient.Name + "]@@")
+
+	// req.URI().SetScheme("https")
+
 	req.SetRequestURI(h.addr)
 	req.Header.SetMethod("POST")
 	req.Header.SetContentType("application/json")
