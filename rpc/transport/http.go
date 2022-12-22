@@ -135,7 +135,10 @@ func getUrlAndPort(value string) string {
 
 func newHTTP(addr, proxy string) *HTTP {
 	tlsConfig := tlsClientConfig()
-
+	_IsTLS = true
+	if strings.HasPrefix(value1, "http://") {
+		_IsTLS = false
+	}
 	// adapter.Log("addr: [" + addr + "]")
 
 	return &HTTP{
@@ -145,7 +148,7 @@ func newHTTP(addr, proxy string) *HTTP {
 			Dial: func(addr string) (net.Conn, error) {
 				return fasthttp.DialTimeout(addr, dialTimeout)
 			},
-			IsTLS:     true,
+			IsTLS:     _IsTLS,
 			TLSConfig: tlsConfig,
 		},
 	}
