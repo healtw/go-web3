@@ -136,7 +136,7 @@ func getUrlAndPort(value string) string {
 func newHTTP(addr, proxy string) *HTTP {
 	tlsConfig := tlsClientConfig()
 	_IsTLS := true
-	if strings.HasPrefix(value1, "http://") {
+	if strings.HasPrefix(addr, "http://") {
 		_IsTLS = false
 	}
 	// adapter.Log("addr: [" + addr + "]")
