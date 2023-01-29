@@ -23,7 +23,9 @@ func NewWeb3WithProxy(provider, proxy string) (*Web3, error) {
 	}
 	e := eth.NewEth(c)
 	chainId, err := e.ChainID()
-
+	if err != nil {
+		return nil, err
+	}
 	// providerLowerStr := strings.ToLower(provider)
 
 	// if strings.Contains(providerLowerStr, "ropsten") {
