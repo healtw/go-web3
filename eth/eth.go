@@ -1,3 +1,14 @@
+/*
+ * ===========================================================================================
+ * Revision History:
+ * Date                         Author                        Action
+ * 2022/07/08                   Carel.Cheng                   Create
+ *Revised content:
+ *1.add func SyncSendRawTransactionWithoutReceipt
+ * ===========================================================================================
+ */
+
+
 package eth
 
 import (

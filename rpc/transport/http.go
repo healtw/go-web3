@@ -1,3 +1,15 @@
+/*
+ * ===========================================================================================
+ * Revision History:
+ * Date                         Author                        Action
+ * 2022/07/11                   Carel.Cheng                   Create
+ * 2022/12/22                   Carel.Cheng                   Modify
+ *Revised content:
+ *1.add new tlsClientConfig function
+ *2.add tls cert check
+ *3.add http process
+ * ===========================================================================================
+ */
 package transport
 
 import (

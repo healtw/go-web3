@@ -1,3 +1,14 @@
+/*
+ * ===========================================================================================
+ * Revision History:
+ * Date                         Author                        Action
+ * 2022/07/08                  Carel.Cheng                   Create
+ * 2023/01/29                  Carel.Cheng                   Modify
+ *Revised content:
+ *1.add SetChainId function
+ *2.Added return value judgment
+ * ===========================================================================================
+ */
 package web3
 
 import (
